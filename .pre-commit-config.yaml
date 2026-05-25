@@ -1,0 +1,54 @@
+# Pre-commit hooks — те же проверки, что и в CI, но локально.
+# Установка:
+#   brew install pre-commit   # или: pip install pre-commit
+#   pre-commit install
+# Ручной прогон:
+#   pre-commit run --all-files
+#
+# Требования к окружению (то же, что и в CI):
+#   zsh, shellcheck, shfmt, bats (опционально для bats-quick).
+# На macOS:  brew install zsh shellcheck shfmt bats-core
+# На Linux:  apt-get install -y zsh shellcheck bats; shfmt — отдельно.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  - repo: local
+    hooks:
+      - id: zsh-syntax
+        name: zsh -n (syntax check)
+        entry: zsh -n
+        language: system
+        files: '\.zsh$'
+
+      - id: shellcheck
+        name: shellcheck (bash mode)
+        entry: shellcheck --shell=bash --severity=warning
+        language: system
+        # zsh формально не поддерживается shellcheck; используем bash-mode
+        # для ловли базовых ошибок (lib/*.zsh содержат `# shellcheck shell=bash`).
+        files: '^lib/.*\.zsh$'
+
+      - id: aliases-doc-fresh
+        name: docs/aliases.md is up-to-date
+        entry: bash -c 'zsh scripts/gen-aliases-doc.zsh && git diff --exit-code docs/aliases.md'
+        language: system
+        pass_filenames: false
+        files: '^(lib/|scripts/gen-aliases-doc\.zsh)'
+
+      - id: bats-quick
+        name: bats (loading + aliases tests)
+        entry: bats tests/test_loading.bats tests/test_aliases.bats tests/test_collisions.bats
+        language: system
+        pass_filenames: false
+        files: '^(yccli\.plugin\.zsh|lib/|tests/)'
+        stages: [pre-push]

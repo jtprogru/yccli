@@ -247,4 +247,3 @@
 | `ycfldd` | `_yccli_confirm "Delete folder $*?"      && yc resource-manager folder  delete <args>` |
 | `ycregd` | `_yccli_confirm "Delete registry $*?"    && yc container registry       delete <args>` |
 | `yclbxd` | `_yccli_confirm "Delete secret $*?"      && yc lockbox secret           delete <args>` |
-

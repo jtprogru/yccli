@@ -53,4 +53,8 @@ out="docs/aliases.md"
   done
 } > "$out"
 
+# Нормализуем хвост: ровно один завершающий \n (без лишних пустых строк).
+# $(<file) в zsh обрезает все trailing newlines, printf '%s\n' добавляет один.
+printf '%s\n' "$(<"$out")" >"$out.tmp" && mv "$out.tmp" "$out"
+
 print "Wrote ${out} ($(wc -l < "$out") lines)"
