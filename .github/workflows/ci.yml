@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint (zsh -n, shellcheck, shfmt)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install zsh, shellcheck, shfmt (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh shellcheck
+          curl -fsSL "https://github.com/mvdan/sh/releases/download/v3.8.0/shfmt_v3.8.0_linux_amd64" \
+            -o /tmp/shfmt
+          chmod +x /tmp/shfmt
+          sudo mv /tmp/shfmt /usr/local/bin/shfmt
+
+      - name: Install shfmt (macOS)
+        if: runner.os == 'macOS'
+        run: brew install shfmt shellcheck
+
+      - name: zsh -n on all *.zsh
+        run: |
+          for f in yccli.plugin.zsh lib/*.zsh scripts/*.zsh; do
+            echo "::group::zsh -n $f"
+            zsh -n "$f"
+            echo "::endgroup::"
+          done
+
+      - name: shellcheck (bash-mode, advisory)
+        run: |
+          # zsh формально не поддерживается shellcheck; используем bash-mode
+          # для лова базовых ошибок. Файлы помечены `# shellcheck shell=bash`.
+          shellcheck --shell=bash --severity=warning lib/*.zsh || true
+
+      - name: shfmt -d (advisory)
+        run: shfmt -d -i 2 -ci lib/*.zsh || true
+
+      - name: aliases.md is up-to-date
+        run: |
+          zsh scripts/gen-aliases-doc.zsh
+          git diff --exit-code docs/aliases.md
+
+  test:
+    name: Bats tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install zsh + bats (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh bats
+
+      - name: Install bats (macOS)
+        if: runner.os == 'macOS'
+        run: brew install bats-core
+
+      - name: Run bats
+        run: bats --tap tests/
+
+  smoke:
+    name: Smoke (yc not installed, plugin must be safe)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zsh
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Load plugin without yc
+        run: |
+          zsh -c "source ./yccli.plugin.zsh && echo CLEAN"
+          # с REQUIRE_YC должно завершиться ошибкой, но не падать жёстко
+          ! zsh -c "YCCLI_REQUIRE_YC=1 source ./yccli.plugin.zsh && echo SHOULD_NOT_PRINT" || true

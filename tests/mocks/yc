@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Mock `yc` для тестов: пишет argv в $YC_MOCK_LOG (или /tmp/yc-mock.log).
+# Поддерживает: `yc version` → "Yandex Cloud CLI 1.10.0 mock/test".
+
+set -euo pipefail
+
+log="${YC_MOCK_LOG:-/tmp/yc-mock.log}"
+printf '%s\n' "$*" >>"$log"
+
+# Минимальная имитация некоторых ответов.
+case "${1:-}" in
+  version|-v|--version)
+    echo "Yandex Cloud CLI 1.10.0 mock/test"
+    ;;
+  completion)
+    # пустой completion-стрим, чтобы плагин не падал
+    echo "# mock completion"
+    ;;
+esac
+
+exit 0
