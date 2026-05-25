@@ -78,6 +78,11 @@ if [[ "${YCCLI_DESTRUCTIVE:-0}" == "1" && -r "${YCCLI_DIR}/lib/destructive.zsh" 
   source "${YCCLI_DIR}/lib/destructive.zsh"
 fi
 
+# Prompt-segment с активным профилем — по запросу.
+if [[ "${YCCLI_PROMPT:-0}" == "1" && -r "${YCCLI_DIR}/lib/prompt.zsh" ]]; then
+  source "${YCCLI_DIR}/lib/prompt.zsh"
+fi
+
 # Опциональная подгрузка completion от самого `yc`.
 if [[ "${YCCLI_ENABLE_COMPLETION:-0}" == "1" ]]; then
   typeset -g YCCLI_CACHE_DIR="${YCCLI_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/yccli}"

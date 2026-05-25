@@ -62,6 +62,25 @@ export YCCLI_ENABLE_COMPLETION=1
 
 Каталог для кэша. По умолчанию — `${XDG_CACHE_HOME:-$HOME/.cache}/yccli`.
 
+## `YCCLI_PROMPT`
+
+Включает `lib/prompt.zsh` — функцию `yc_prompt_info`, которую можно вставить в `PROMPT`/`RPROMPT`.
+
+```sh
+export YCCLI_PROMPT=1
+# … после загрузки плагина:
+setopt PROMPT_SUBST
+RPROMPT='$(yc_prompt_info)'
+```
+
+Доступные плейсхолдеры в `YCCLI_PROMPT_FORMAT` (по умолчанию `[yc:%p]`):
+
+- `%p` — активный профиль
+- `%c` — `cloud-id`
+- `%f` — `folder-id`
+
+`YCCLI_PROMPT_TTL` (секунды, по умолчанию `60`) — частота обращений к `yc config`; результат кэшируется в файл, поэтому prompt быстрый. При смене профиля через `ycpa` / `yc-folder-set` / `yc-cloud-set` кэш инвалидируется автоматически.
+
 ## `YCCLI_VERSION_WARN`
 
 Сравнивает текущую версию `yc` с содержимым `.yc-version` и печатает предупреждение в stderr при mismatch. Не падает.

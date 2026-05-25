@@ -38,6 +38,15 @@ plugins=(... yccli)
 zinit light jtprogru/yccli
 ```
 
+### Homebrew
+
+```sh
+brew tap jtprogru/yccli
+brew install yccli
+# затем в ~/.zshrc:
+source "$(brew --prefix)/share/yccli/yccli.plugin.zsh"
+```
+
 ### Прочие менеджеры и ручная установка
 
 См. [docs/installation.md](docs/installation.md).
@@ -51,6 +60,7 @@ zinit light jtprogru/yccli
 | `YCCLI_DESTRUCTIVE`        | `0`                   | `1` — включить алиасы `delete`/`stop` с подтверждением.                    |
 | `YCCLI_ENABLE_COMPLETION`  | `0`                   | `1` — подгружать `yc completion zsh` с кэшированием.                       |
 | `YCCLI_CACHE_DIR`          | `$XDG_CACHE_HOME/yccli` | Каталог для кэша completion.                                            |
+| `YCCLI_PROMPT`             | `0`                   | `1` — функция `yc_prompt_info` для PROMPT/RPROMPT (с кэшем).               |
 | `YCCLI_VERSION_WARN`       | `0`                   | `1` — предупреждать при mismatch с `.yc-version`.                          |
 
 Подробнее: [docs/configuration.md](docs/configuration.md).
