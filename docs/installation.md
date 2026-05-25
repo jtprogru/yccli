@@ -73,9 +73,20 @@ git clone https://github.com/jtprogru/yccli ~/.local/share/yccli
 source ~/.local/share/yccli/yccli.plugin.zsh
 ```
 
-## Homebrew (планируется)
+## Homebrew tap
 
-Tap-формула — будущая задача (см. CHANGELOG).
+```sh
+brew tap jtprogru/yccli
+brew install yccli
+```
+
+В `~/.zshrc`:
+
+```sh
+source "$(brew --prefix)/share/yccli/yccli.plugin.zsh"
+```
+
+Формула — [packaging/homebrew/yccli.rb](../packaging/homebrew/yccli.rb); описание процесса публикации tap-а — [packaging/homebrew/README.md](../packaging/homebrew/README.md).
 
 ---
 
