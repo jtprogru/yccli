@@ -1,0 +1,94 @@
+name: Integration
+
+# Smoke-тест с реальным yc CLI.
+# Запускается раз в неделю и по push в main.
+# Если секрет YC_OAUTH_TOKEN не задан — выполняются только команды,
+# не требующие авторизации (yc version).
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # пн 06:00 UTC
+  push:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'yccli.plugin.zsh'
+      - '.yc-version'
+      - '.github/workflows/integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  yc-version-match:
+    name: yc --version совпадает с .yc-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Установка yc
+        run: |
+          curl -fsSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh \
+            | bash -s -- -i "$HOME/yandex-cloud" -n
+          echo "$HOME/yandex-cloud/bin" >>"$GITHUB_PATH"
+
+      - name: Сверка версий
+        run: |
+          expected="$(cat .yc-version)"
+          actual="$(yc version | awk '{print $4}')"
+          echo "expected=$expected actual=$actual"
+          if [[ "$expected" != "$actual" ]]; then
+            echo "::warning::yc version mismatch (expected=$expected, actual=$actual)"
+          fi
+
+  yc-readonly:
+    name: Read-only вызовы через yccli
+    runs-on: ubuntu-latest
+    # Job выполняется только если в репозитории есть секрет YC_OAUTH_TOKEN.
+    if: ${{ github.event_name != 'pull_request' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Проверка наличия секрета
+        id: check
+        run: |
+          if [[ -z "${{ secrets.YC_OAUTH_TOKEN }}" ]]; then
+            echo "skip=true" >>"$GITHUB_OUTPUT"
+            echo "::notice::YC_OAUTH_TOKEN не задан — read-only тесты пропускаются."
+          fi
+
+      - name: Установка zsh + yc
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y zsh
+          curl -fsSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh \
+            | bash -s -- -i "$HOME/yandex-cloud" -n
+          echo "$HOME/yandex-cloud/bin" >>"$GITHUB_PATH"
+
+      - name: yc init через секрет
+        if: steps.check.outputs.skip != 'true'
+        env:
+          YC_TOKEN: ${{ secrets.YC_OAUTH_TOKEN }}
+          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+        run: |
+          yc config set token "$YC_TOKEN"
+          yc config set cloud-id "$YC_CLOUD_ID"
+          yc config set folder-id "$YC_FOLDER_ID"
+          yc iam whoami
+
+      - name: Прогон через алиасы плагина
+        if: steps.check.outputs.skip != 'true'
+        env:
+          YC_TOKEN: ${{ secrets.YC_OAUTH_TOKEN }}
+        run: |
+          zsh -c "
+            source ./yccli.plugin.zsh
+            ycw                       # whoami
+            ycpl                      # profile list
+            yccloudl --format json | head -50   # clouds list
+            ycfldl  --format json | head -50    # folders list
+            ycvml   --format json | head -50    # VMs (может быть пусто)
+            ycnetl  --format json | head -50    # networks
+          "
