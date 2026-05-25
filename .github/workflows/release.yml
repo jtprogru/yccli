@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'   # pre-releases: v1.0.0-rc1
+
+permissions:
+  contents: write   # нужно для gh release create
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # git-cliff'у нужна полная история
+
+      - name: Генерация release notes из conventional commits
+        id: cliff
+        uses: orhun/git-cliff-action@v3
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+
+      - name: Печатаем release notes (для логов CI)
+        run: cat "${{ steps.cliff.outputs.changelog }}"
+
+      - name: Создание GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          prerelease=""
+          if [[ "$tag" =~ -(rc|beta|alpha) ]]; then
+            prerelease="--prerelease"
+          fi
+
+          gh release create "$tag" \
+            --title "$tag" \
+            --notes-file "${{ steps.cliff.outputs.changelog }}" \
+            $prerelease
