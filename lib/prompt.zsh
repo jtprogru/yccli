@@ -43,10 +43,22 @@ _yccli_prompt_refresh() {
   print -r -- "${profile}|${cloud}|${folder}" >| "$_YCCLI_PROMPT_CACHE"
 }
 
+_yccli_file_mtime() {
+  # GNU stat (Linux) → BSD stat (macOS) → 0 как fallback.
+  # Порядок важен: на Linux `stat -f %m` возвращает mount-point (строку)
+  # с нулевым exit code, поэтому BSD-вариант идёт ПОСЛЕ GNU.
+  local m
+  m="$(stat -c %Y "$1" 2>/dev/null)"
+  if [[ "$m" =~ ^[0-9]+$ ]]; then echo "$m"; return; fi
+  m="$(stat -f %m "$1" 2>/dev/null)"
+  if [[ "$m" =~ ^[0-9]+$ ]]; then echo "$m"; return; fi
+  echo 0
+}
+
 yc_prompt_info() {
-  # Если кэш старше TTL — обновим. Перезаписываем атомарно.
+  # Если кэш старше TTL — обновим.
   if [[ ! -s "$_YCCLI_PROMPT_CACHE" ]] || \
-     (( $(date +%s) - $(stat -f %m "$_YCCLI_PROMPT_CACHE" 2>/dev/null || stat -c %Y "$_YCCLI_PROMPT_CACHE" 2>/dev/null || echo 0) > YCCLI_PROMPT_TTL )); then
+     (( $(date +%s) - $(_yccli_file_mtime "$_YCCLI_PROMPT_CACHE") > YCCLI_PROMPT_TTL )); then
     _yccli_prompt_refresh
   fi
 

@@ -53,8 +53,10 @@ out="docs/aliases.md"
   done
 } > "$out"
 
-# Нормализуем хвост: ровно один завершающий \n (без лишних пустых строк).
-# $(<file) в zsh обрезает все trailing newlines, printf '%s\n' добавляет один.
-printf '%s\n' "$(<"$out")" >"$out.tmp" && mv "$out.tmp" "$out"
+# Нормализуем хвост: ровно один завершающий \n.
+# $(cat file) обрезает trailing newlines, printf '%s\n' добавляет один.
+# (используем cat, а не zsh-shortcut $(<file): он валит `zsh -n` на старых zsh
+#  на Ubuntu, потому что парсер пытается открыть файл при синтаксической проверке.)
+printf '%s\n' "$(cat "$out")" >"$out.tmp" && mv "$out.tmp" "$out"
 
 print "Wrote ${out} ($(wc -l < "$out") lines)"
