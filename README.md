@@ -38,15 +38,6 @@ plugins=(... yccli)
 zinit light jtprogru/yccli
 ```
 
-### Homebrew
-
-```sh
-brew tap jtprogru/yccli
-brew install yccli
-# затем в ~/.zshrc:
-source "$(brew --prefix)/share/yccli/yccli.plugin.zsh"
-```
-
 ### Прочие менеджеры и ручная установка
 
 См. [docs/installation.md](docs/installation.md).
